@@ -180,3 +180,192 @@ if (!$result_find_an_admin) {
     }
 };
 
+$_SESSION = null;
+$login = null;
+$first_name = null;
+$last_name = null;
+$role = null;
+
+$error = '';
+$error_signup = false;
+$error_login = false;
+
+console_log('$_SESSION is "'.$_SESSION.'".');
+console_log('$login is "'.$login.'".');
+console_log('$first_name is "'.$first_name.'".');
+console_log('$last_name is "'.$last_name.'".');
+console_log('$role is "'.$role.'".');
+
+if ($_POST['login'] && $_POST['firstname'] && $_POST['lastname'] && $_POST['password'] && $_POST['passwordconfirm']) {
+
+    $login = $_POST['login'];
+    $first_name = ucfirst($_POST['firstname']);
+    $last_name = ucfirst($_POST['lastname']);
+    $pwd = $_POST['password'];
+    $hashed_password = password_hash($pwd, PASSWORD_DEFAULT);
+
+    $role = 'users';
+
+    $date = date('Y-m-d h:i:s', time());
+
+    console_log("the login is ".$login."'.");
+    console_log("the firstname is ".$first_name."'.");
+    console_log("the lastname is ".$last_name."'.");
+    console_log("the password is ".$hashed_password."'.");
+
+    $find_a_login = "SELECT `login` FROM `users` WHERE login = '$login'";
+    $query_login = mysqli_query($mysqli, $find_a_login);
+    $result_find_a_login = mysqli_fetch_all($query_login, MYSQLI_ASSOC);
+
+    console_log('Result find a login is "'.json_encode($result_find_a_login).'".');
+
+    $login_from_database = $result_find_a_login[0][0];
+
+    if (!isset($login_from_database)) {
+
+        console_log("user was not found in database");
+
+        $filled_data_base = "INSERT INTO `users`(
+            `login`,
+            `firstname`, 
+            `lastname`, 
+            `password`,
+            `role`, 
+            `created_at`,
+            `last_connexion_at`, 
+            `modified_at`
+            ) VALUES (
+                '$login',
+                '$first_name',
+                '$last_name',
+                '$hashed_password',
+                '$role',
+                '$date',
+                '$date',
+                '$date'
+                )";
+
+        if (mysqli_query($mysqli, $filled_data_base)) {
+
+            $error_signup = true;
+            $error = 'your account was created with success, now login :)';
+            console_log('Records from "'.$login.' profile" added successfully in database.');
+        } else {
+
+            $error_login = true;
+            console_log('ERROR: Could not able to execute'.$filled_data_base.'""'.mysqli_error($mysqli));
+        }
+    } else {
+
+        $error_signup = true;
+        $error = 'your account already exist, please login :)';
+        console_log('Records from "'.$login.' profile" found in database.');
+    }
+};
+
+if ($_POST['login_login'] && $_POST['login_password']) {
+
+    $login = $_POST['login_login'];
+    $password = $_POST['login_password'];
+
+    console_log("the login is ".$login."'.");
+    console_log("the password is ".$password."'.");
+
+    $find_a_login = "SELECT * FROM `users` WHERE login = '$login'";
+    $query_login = mysqli_query($mysqli, $find_a_login);
+    $result_find_a_login = mysqli_fetch_all($query_login, MYSQLI_ASSOC);
+    
+    console_log('Result find a login is "'.json_encode($result_find_a_login).'".');
+
+    if (!$result_find_a_login) {
+
+        $error_signup = true;
+        $error = 'this login wasn\'t found, please try again or signup :)';
+
+        console_log('Records from "'.$login.' profile" not found in database.');
+    } else {
+
+        if (password_verify($password, $result_find_a_login[0]['password'])) {
+
+            $error_login = false;
+            $error = 'the login matches the password !';
+
+            $date = date('Y-m-d h:i:s', time());
+            $login = $_POST['login_login'];
+            
+            $find_current_user = "SELECT
+                    `login`,
+                    `firstname`,
+                    `lastname`,
+                    `role`,
+                    `last_connexion_at`,
+                    `modified_at`
+                FROM
+                    `users`
+                WHERE
+                    login = '$login'";
+
+            $query_current_user = mysqli_query($mysqli, $find_current_user);
+            $result_find_current_user = mysqli_fetch_all($query_current_user, MYSQLI_ASSOC);
+            console_log('Result find current_user is "'.json_encode($result_find_current_user).'".');
+
+            $updating_last_connexion_at = "UPDATE
+                    `users`
+                SET
+                    `last_connexion_at` = '$date'
+                WHERE
+                    login = '$login'";
+
+            if (mysqli_query($mysqli, $updating_last_connexion_at)) {
+
+                console_log('Updated last connexion from "'.$login.' profile" added successfully in database.');
+            } else {
+
+                console_log('ERROR: Could not able to execute'.$updating_last_connexion_at.'""'.mysqli_error($mysqli));
+            }
+
+            $_SESSION['login'] = $result_find_current_user[0]['login'];
+            $_SESSION['first_name'] = $result_find_current_user[0]['firstname'];
+            $_SESSION['last_name'] = $result_find_current_user[0]['lastname'];
+            $_SESSION['role'] = $result_find_current_user[0]['role'];
+
+            console_log('$_SESSION current user is "'.json_encode($_SESSION).'".');
+            console_log('$_SESSION[`login`] current user is "'.json_encode($_SESSION['login']).'".');
+            console_log('$_SESSION[`first_name`] current user is "'.json_encode($_SESSION['first_name']).'".');
+            console_log('$_SESSION[`last_name`] current user is "'.json_encode($_SESSION['last_name']).'".');
+
+            $login = $_SESSION['login'];
+
+            $avatar = $_SESSION['avatar'];
+
+            $first_name = $_SESSION['first_name'];
+            $last_name = $_SESSION['last_name'];
+
+            $role = $_SESSION['role'];
+
+            console_log('$login is "'.$login.'".');
+            console_log('$first_name is "'.$first_name.'".');
+            console_log('$last_name is "'.$last_name.'".');
+            console_log('$role is "'.$role.'".');
+
+        } else {
+
+            $error_signup = true;
+            $error = 'the login doesn\'t match the password, please try again!';
+
+            console_log('the current login must match the password of the database...');
+        }
+        
+    }
+};
+
+if ($_GET['logout'] === true) {
+
+    console_log('$_GET is "'.json_encode($_GET).'".');
+    console_log('$_SESSION current user is "'.json_encode($_SESSION).'".');
+
+    session_unset();
+    session_destroy();
+};
+
+
