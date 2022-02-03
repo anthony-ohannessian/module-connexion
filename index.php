@@ -62,7 +62,7 @@ if ($mysqli->query($create_users_tab) === TRUE) {
 
 $find_a_login = "SELECT `login` FROM `users`";
 $query_login = mysqli_query($mysqli, $find_a_login);
-$result_find_a_login = mysqli_fetch_all($query_login);
+$result_find_a_login = mysqli_fetch_all($query_login, MYSQLI_ASSOC);
 
 console_log('Result find a login is "'.json_encode($result_find_a_login).'".');
 
@@ -135,4 +135,48 @@ if (!$result_find_a_login) {
             console_log('ERROR: Could not able to execute'.$filled_data_base.'""'.mysqli_error($mysqli));
         }
     }
-}
+};
+
+$admin_login = 'admin13003';
+$find_an_admin = "SELECT `login` FROM `users` WHERE login = '$admin_login'";
+$query_find_an_admin = mysqli_query($mysqli, $find_an_admin);
+$result_find_an_admin = mysqli_fetch_all($query_find_an_admin, MYSQLI_ASSOC);
+
+if (!$result_find_an_admin) {
+
+    $admin_first_name = 'Admin';
+    $admin_last_name = 'Admin';
+
+    $admin_password = '@Admin13003';
+    $hashed_password = password_hash($admin_password, PASSWORD_DEFAULT);
+
+    $role = 'admin';
+    $date = date('Y-m-d h:i:s', time());
+
+    $filled_data_base = "INSERT INTO `users`(
+        `login`,
+        `firstname`, 
+        `lastname`, 
+        `password`,
+        `role`, 
+        `created_at`,
+        `last_connexion_at`, 
+        `modified_at`
+        ) VALUES (
+            '$admin_login',
+            '$admin_first_name',
+            '$admin_last_name',
+            '$hashed_password',
+            '$role',
+            '$date',
+            '$date',
+            '$date'
+            )";
+
+    if (mysqli_query($mysqli, $filled_data_base)) {
+        console_log('Records from "admin profile" added successfully in database.');
+    } else {
+        console_log('ERROR: Could not able to execute'.$filled_data_base.'""'.mysqli_error($mysqli));
+    }
+};
+
